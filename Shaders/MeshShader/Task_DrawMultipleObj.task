@@ -1,0 +1,47 @@
+#version 450
+#extension GL_NV_mesh_shader : require
+
+const uint GROUP_SIZE = 2;
+
+// Set the number of threads per workgroup (always one-dimensional).
+layout(local_size_x= GROUP_SIZE) in;
+
+
+layout (std430, binding = 3) buffer TransformBuffer {
+    mat4 transforms[];
+};
+
+// Note sizes need to match between task/mesh stages
+const uint INSTANCE_COUNT = 32;
+
+// Pass data from task shader to mesh shader stage
+taskNV out instanceData {
+	uint taskGroupID[INSTANCE_COUNT];
+	mat4 meshWorlds[INSTANCE_COUNT];
+} iData;
+
+uniform uint triangleCount;
+
+void main()
+{
+    uint meshNo = 1;
+    // Get thread id
+    uint thread_id = gl_LocalInvocationID.x;
+    // Get group id
+    uint group_id = gl_WorkGroupID.x;
+    // Get global id
+    // {globa id} = {group_id} * {group size} + thread_id
+    uint global_id = gl_GlobalInvocationID.x;
+
+	if (thread_id == 0)
+	{
+		// Set number of mesh shader workgroups launched
+		gl_TaskCountNV = meshNo;
+	}
+
+	if (global_id < meshNo)
+	{
+		iData.meshWorlds[global_id] = transforms[global_id];
+		iData.taskGroupID[global_id] = group_id;
+	}
+}
