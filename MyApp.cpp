@@ -295,10 +295,11 @@ void CMyApp::InitTextures()
 		m_CarAspects[i] = (float)w / (float)h;
 		m_CarSizes[i] = glm::ivec2(w,h);
 
-		m_frames[i] = {CMyApp::MakeBuffer(w,h), CMyApp::MakeBuffer(w, h)};
+		m_frames[i] = {CMyApp::MakeBuffer(w,h), CMyApp::MakeBuffer(w, h), CMyApp::MakeBuffer(w, h)};
 	}
 
 	m_vec_texes = {
+		CMyApp::MakeBuffer(m_vec_tex_size, m_vec_tex_size),
 		CMyApp::MakeBuffer(m_vec_tex_size, m_vec_tex_size),
 		CMyApp::MakeBuffer(m_vec_tex_size, m_vec_tex_size)
 	};
@@ -474,8 +475,8 @@ CMyApp::FrameBuffer CMyApp::MakeBuffer(int w, int h){
 	glBindTexture(GL_TEXTURE_2D,buffer.texture);
 	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,nullptr);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -543,7 +544,11 @@ void CMyApp::DrawPass( GLuint srcTex, GLuint destFbo){
 		w = m_viewPortX;
 		h = m_viewportY;
 	}
-	else{
+	else if (m_draw_vec){
+		w = m_vec_tex_size;
+		h = m_vec_tex_size;
+	} 
+	else {
 		w = m_CarSizes[m_active_car_img].x;
 		h = m_CarSizes[m_active_car_img].y;
 	}
@@ -576,119 +581,125 @@ void CMyApp::DrawPass( GLuint srcTex, GLuint destFbo){
 
 void CMyApp::DrawMainScene()
 {
-	std::array<CMyApp::FrameBuffer,2> buff = m_frames[m_active_car_img];
-	int n = -1;
-
-	m_mode = M_COPY;
-	CMyApp::DrawPass(m_CarIDs[m_active_car_img], buff[(n+1)%2].fbo);
-	n++;
-	bool draw_vec = false;
+	std::array<CMyApp::FrameBuffer,3> buff = m_frames[m_active_car_img];
 	int base_seed = m_seed;
 
-	if (m_disp_mode >= M_AVG){
-		m_mode = M_AVG;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
-		n++;
-		draw_vec = false;
-	}
+	int n = -1;
 
-	if (m_disp_mode >= M_GAUSS){
-		m_mode = M_GAUSS;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+	if (m_settings_changed > 0){
+		m_settings_changed--;
+		m_mode = M_COPY;
+		m_draw_vec = false;
+		CMyApp::DrawPass(m_CarIDs[m_active_car_img], buff[(n+1)%2].fbo);
 		n++;
-		draw_vec = false;
-	}
-	if (m_disp_mode ==M_SOBEL_GRAD){
-		m_mode = M_SOBEL_GRAD;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
-		n++;
-		draw_vec = false;
-	}
-	if (m_disp_mode ==M_SOBEL_DIR){
-		m_mode = M_SOBEL_DIR;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
-		n++;
-		draw_vec = false;
-	}
-	if (m_disp_mode ==M_SOBEL_NORM){
-		m_mode = M_SOBEL_NORM;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
-		n++;
-		draw_vec = false;
-	}
-	if (m_disp_mode >= M_SOBEL){
-		m_mode = M_SOBEL;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
-		n++;
-		draw_vec = false;
-	}
-	if (m_disp_mode >= M_NON_MAX_SUPRESS){
-		m_mode = M_NON_MAX_SUPRESS;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
-		n++;
-		draw_vec = false;
-	}
-	if (m_disp_mode >= M_THRESHOLD){
-		m_mode = M_THRESHOLD;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
-		n++;
-		draw_vec = false;
-	}
-	if (m_disp_mode >= M_HYSTERESIS){
-		m_mode = M_HYSTERESIS;
-		m_last_hyst = 1;
-		for(int i = 0; i <= m_hysteresis_iter; i++){
-			if (i == m_hysteresis_iter){
-				m_last_hyst =0;
-			}
+
+		if (m_disp_mode >= M_AVG){
+			m_mode = M_AVG;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
 		}
-		draw_vec = false;
-	}
-	if (m_disp_mode >= M_RANDOM_POINTS){
-		m_mode = M_RANDOM_POINTS;
-		CMyApp::DrawPass(buff[n%2].texture, m_vec_texes[(n+1)%2].fbo);
-		n++;
-		draw_vec = true;
-		m_seed++;
-	}
-	if (m_disp_mode == M_LINE_STR){
-		m_mode = M_LINE_STR;
-		CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
-		n++;
-		draw_vec = true;
-		m_seed++;
-	}
-	if (m_disp_mode == M_LINE_DIR){
-		m_mode = M_LINE_DIR;
-		CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
-		n++;
-		draw_vec = true;
-		m_seed++;
-	}
-	if (m_disp_mode >= M_VECTOR_GEN){
-		m_mode = M_VECTOR_GEN;
-		CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
-		n++;
-		draw_vec = true;
-		m_seed++;
+
+		if (m_disp_mode >= M_GAUSS){
+			m_mode = M_GAUSS;
+			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+			n++;
+		}
+		if (m_disp_mode ==M_SOBEL_GRAD){
+			m_mode = M_SOBEL_GRAD;
+			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+			n++;
+		}
+		if (m_disp_mode ==M_SOBEL_DIR){
+			m_mode = M_SOBEL_DIR;
+			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+			n++;
+		}
+		if (m_disp_mode ==M_SOBEL_NORM){
+			m_mode = M_SOBEL_NORM;
+			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+			n++;
+		}
+		if (m_disp_mode >= M_SOBEL){
+			m_mode = M_SOBEL;
+			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+			n++;
+		}
+		if (m_disp_mode >= M_NON_MAX_SUPRESS){
+			m_mode = M_NON_MAX_SUPRESS;
+			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+			n++;
+		}
+		if (m_disp_mode >= M_THRESHOLD){
+			m_mode = M_THRESHOLD;
+			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+			n++;
+		}
+		if (m_disp_mode >= M_HYSTERESIS){
+			m_mode = M_HYSTERESIS;
+			m_last_hyst = 1;
+			for(int i = 0; i <= m_hysteresis_iter; i++){
+				if (i == m_hysteresis_iter){
+					m_last_hyst =0;
+				}
+				CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+				n++;
+			}
+		}
+		if (m_disp_mode >= M_RANDOM_POINTS){
+			m_draw_vec = true;
+			m_mode = M_RANDOM_POINTS;
+			CMyApp::DrawPass(buff[n%2].texture, m_vec_texes[(n+1)%2].fbo);
+			n++;
+			m_seed++;
+		}
+		if (m_disp_mode == M_POINTS_DISP){
+			m_draw_vec = false;
+			m_mode = M_POINTS_DISP;
+			CMyApp::DrawPass(m_vec_texes[n%2].texture, buff[(n+1)%2].fbo);
+			n++;
+			m_seed++;
+		}
+		if (m_disp_mode == M_LINE_STR){
+			m_mode = M_LINE_STR;
+			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
+			n++;
+			m_seed++;
+		}
+		if (m_disp_mode == M_LINE_DIR){
+			m_mode = M_LINE_DIR;
+			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
+			n++;
+			m_seed++;
+		}
+		if (m_disp_mode >= M_VECTOR_GEN){
+			m_mode = M_VECTOR_GEN;
+			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
+			n++;
+			m_seed++;
+		}
+
+		if (m_disp_mode == M_LINE_GEN){
+			m_mode = M_LINE_GEN;
+			m_draw_vec = false;
+			CMyApp::DrawPass(m_vec_texes[n%2].texture, buff[(n+1)%2].fbo);
+			n++;
+			m_seed++;
+		}
+		
+		m_mode = M_COPY;
+		CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[2].fbo);
+		CMyApp::DrawPass(buff[n%2].texture, buff[2].fbo);
 	}
 
-	if (m_disp_mode == M_LINE_GEN){
-		m_mode = M_LINE_GEN;
-		CMyApp::DrawPass(m_vec_texes[n%2].texture, buff[(n+1)%2].fbo);
-		n++;
-		draw_vec = false;
-		m_seed++;
-	}
-	
+
+
+
 	m_mode = M_COPY;
-	if (draw_vec){
-		CMyApp::DrawPass(m_vec_texes[n%2].texture, 0);
+	if (m_draw_vec){
+		CMyApp::DrawPass(m_vec_texes[2].texture, 0);
 	}
 	else{
-		CMyApp::DrawPass(buff[n%2].texture, 0);
+		CMyApp::DrawPass(buff[2].texture, 0);
 	}
 
 
@@ -730,44 +741,56 @@ void CMyApp::RenderGUI()
 				timer = 0;
 				frameCount = 0;
 			}
-			ImGui::Text("FPS: %d", static_cast<int>(fps));
 
-			if (ImGui::BeginMenu("FPS settings"))
-			{
-				ImGui::PushItemWidth(150.0f);
-				ImGui::SliderFloat("Refresh time for the FPS counter", &refresh_time, 0.01f, 1.0f);
-				ImGui::PopItemWidth();
-
-				ImGui::Checkbox("Lock axes to the camera's look at point", &m_lockAxesToCamera);
-
-				ImGui::EndMenu();
+			ImGui::PushItemWidth(150.0f);
+			if(ImGui::SliderInt("mode",&m_disp_mode, M_COPY, M_MAXVAL)){
+				m_settings_changed = 2;
 			}
 			ImGui::Separator();
 
 			ImGui::PushItemWidth(150.0f);
-			if(ImGui::SliderInt("mode",&m_disp_mode, M_COPY, M_MAXVAL)){}
+			if(ImGui::SliderInt("image Id",&m_active_car_img, 0, m_car_img_cnt-1)){
+				m_settings_changed = 2;
+			}
 			ImGui::Separator();
 					
 			if (ImGui::BeginMenu("PostProcessing settings")){
-				if(ImGui::SliderInt("image Id",&m_active_car_img, 0, m_car_img_cnt-1)){}
 				
-				if(ImGui::SliderInt("Kernel size",&m_kernel_size, 0, 20)){}
+				if(ImGui::SliderInt("Kernel size",&m_kernel_size, 0, 20)){
+					m_settings_changed = 2;
+				}
 
-				if(ImGui::SliderFloat("Sigma",&m_sigma, 0.01, 2)){}
+				if(ImGui::SliderFloat("Sigma",&m_sigma, 0.01, 2)){
+					m_settings_changed = 2;
+				}
 
-				if(ImGui::SliderFloat("Lower",&m_threshold_lower, 0, 1)){}
+				if(ImGui::SliderFloat("Lower",&m_threshold_lower, 0, 1)){
+					m_settings_changed = 2;
+				}
 
-				if(ImGui::SliderFloat("Upper",&m_threshold_upper, 0, 1)){}
+				if(ImGui::SliderFloat("Upper",&m_threshold_upper, 0, 1)){
+					m_settings_changed = 2;
+				}
 
-				if(ImGui::SliderInt("Hyst iterations",&m_hysteresis_iter, 1, 1000)){}
+				if(ImGui::SliderInt("Hyst iterations",&m_hysteresis_iter, 1, 1000)){
+					m_settings_changed = 2;
+				}
 
-				if(ImGui::SliderInt("Point seed",&m_seed, 1, 1000)){}
-				if(ImGui::SliderFloat("line threshold",&m_line_th, 0, 1)){}
-				if(ImGui::SliderFloat("line threshold 2",&m_line_thth, 0, 1)){}
+				if(ImGui::SliderInt("Point seed",&m_seed, 1, 1000)){
+					m_settings_changed = 2;
+				}
+				if(ImGui::SliderFloat("line threshold",&m_line_th, 0, 1)){
+					m_settings_changed = 2;
+				}
+				if(ImGui::SliderFloat("line threshold 2",&m_line_thth, 0, 1000)){
+					m_settings_changed = 2;
+				}
 
 				ImGui::EndMenu();
 			}
 
+			ImGui::Separator();
+			ImGui::Text("FPS: %d", static_cast<int>(fps));
 
 		}
 		ImGui::EndMainMenuBar();

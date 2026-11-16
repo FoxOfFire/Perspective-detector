@@ -152,7 +152,7 @@ vec4 hysteresis(){
 }
 uint r = 123412341;
 
-uint rnd()
+uint rnd(uint r)
 {
 	r = (r * 9302 + 49297)%122280;
 	r = r ^ (r << 13);
@@ -162,25 +162,40 @@ uint rnd()
 }
 vec4 pointSelect(){
 
-	r = int(round((uv.x+uv.y)*5134123))+seed;
+	r = int((uv.x*uv.x+uv.y)*float(texSize.x * texSize.y))+seed;
 	vec2 size =  vec2(texSize);
 	vec2 texelSize = 1.0 / size;
-	uint kernel_w = 4*kernelSize +1;
+	int kernel_w = 2*int(kernelSize) ;
+	int kernel_p = 2*kernel_w + 1;
 	for(int k = 0; k < kernelSize; k++){
-		uint x = rnd() % int(size.x);
-		uint y = rnd() % int(size.y);
-		uint sx = rnd()%kernel_w;
-		uint sy = rnd()%kernel_w;
-		for(uint i = 0; i < kernel_w; i++){
-			for(uint j = 0; j < kernel_w; j++){
-				uint ofx = x + ((sx + i) % kernel_w);
-				uint ofy = y + ((sy + j) % kernel_w);
-				vec4 pixel = texture(srcImg, uv + vec2(ofx,ofy)*texelSize);
+		r = rnd(r);
+		int x = int(r);
+		r = rnd(r);
+		int y = int(r);
+		for(int i = 0; i < kernel_p; i++){
+			for(int j = 0; j < kernel_p; j++){
+				int ofx = (x + i)% int(size.x);
+				int ofy = (y + j)% int(size.y);
+				vec2 samplePos = uv + vec2(ofx,ofy)*texelSize;
+				vec4 pixel = texture(srcImg, samplePos);
 				if (pixel.x == 1){
-					return vec4(ofx*texelSize.x,ofy*texelSize.y,.1,1);
+					return vec4(samplePos,.1,1);
 				}
 
 			}
+		}
+	}
+	return vec4(0,0,0,1);
+}
+vec4 pointDisplay(){
+	float invVecSize = 1.0 / float(vecSize);
+	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
+	for(uint i = 0; i < vecSize; i++){
+		for(uint j = 0; j < vecSize; j++){
+			if(length(uv-texture(srcImg,vec2(i,j)*invVecSize).xy) <  invImgSize){
+				return vec4(1);
+			}
+
 		}
 	}
 	return vec4(0,0,0,1);
@@ -190,11 +205,13 @@ vec4 vecgen(int mode){
 	if (pos.z == 0) {
 		return vec4(0);
 	}
-	r = int(round((uv.x+uv.y)*5000))+seed;
+	r = int(round((uv.x*uv.x+uv.y)*5000))+seed;
 	vec2 texelSize = 1.0 /vec2(vecSize);
 	
-	uint sx = rnd();
-	uint sy = rnd();
+	r = rnd(r);
+	uint sx = r;
+	r = rnd(r);
+	uint sy = r;
 	bool got_line = false;
 	int hits = 0;
 	int total= 0;
@@ -220,7 +237,7 @@ vec4 vecgen(int mode){
 				got_line = true;
 			}
 			float linedist = abs(line_data.x *pos.x + line_data.y * pos.y +line_data.z);
-			if (linedist < lineTh2){
+			if (linedist*min(texSize.x,texSize.y) < lineTh2){
 				hits++;
 			}
 			total++;
@@ -252,9 +269,10 @@ vec4 linegen(){
 			if (abs(line.w) + abs(line.z) + abs(line.y) + abs(line.x) < 0.001){
 				continue;
 			}
-			float linedist = abs(line.x *uv.x + line.y * uv.y + line.z);
-			if (linedist < lineTh2){
-				return vec4(1);
+			vec3 dist = vec3(line.x *uv.x , line.y * uv.y , line.z);
+			float linedist = abs(dist.x) + abs(dist.y) + abs(dist.z);
+			if (linedist *max(texSize.x,texSize.y)< lineTh2){
+				return vec4(dist,1);
 			}
 
 		}
@@ -300,15 +318,18 @@ void main(){
 		FragColor = pointSelect();
 	}
 	else if (mode == 11){
-		FragColor = vecgen(1);
+		FragColor = pointDisplay();
 	}
 	else if (mode == 12){
-		FragColor = vecgen(2);
+		FragColor = vecgen(1);
 	}
 	else if (mode == 13){
-		FragColor = vecgen(0);
+		FragColor = vecgen(2);
 	}
 	else if (mode == 14){
+		FragColor = vecgen(0);
+	}
+	else if (mode == 15){
 		FragColor = linegen();
 	}
 	else{
