@@ -142,16 +142,18 @@ protected:
 	std::array<glm::ivec2,m_car_img_cnt> m_CarSizes={glm::ivec2(100),glm::ivec2(100),glm::ivec2(100),glm::ivec2(100)};
 	GLuint m_SkyboxTextureID = 0;
 
+
 	int m_kernel_size = 9;
 	GLfloat m_sigma = .9;
 	GLfloat m_threshold_lower = .1;
 	GLfloat m_threshold_upper = .5;
 	int m_hysteresis_iter = 200;
 	GLuint m_last_hyst = 0;
-	GLfloat m_points = .1;
 	GLint m_seed = 0;
 	GLfloat m_line_th = .1;
 	GLfloat m_line_thth = 1;
+
+	int m_vec_tex_size = 101;
 
 	//Modes:
 	static const int M_COPY = 0;
@@ -165,8 +167,10 @@ protected:
 	static const int M_THRESHOLD = 8;
 	static const int M_HYSTERESIS = 9;
 	static const int M_RANDOM_POINTS = 10;
-	static const int M_VECTOR_GEN = 11;
-	static const int M_LINE_GEN = 12;
+	static const int M_LINE_STR = 11;
+	static const int M_LINE_DIR = 12;
+	static const int M_VECTOR_GEN = 13;
+	static const int M_LINE_GEN = 14;
 
 	static const int M_MAXVAL = M_LINE_GEN ;
 
@@ -180,6 +184,7 @@ protected:
 		GLuint fbo = 0;
 	};
 	std::array<std::array<FrameBuffer,2>,m_car_img_cnt> m_frames;
+	std::array<FrameBuffer,2> m_vec_texes;
 	GLuint m_frameVao;
 
 	FrameBuffer MakeBuffer(int w, int h);

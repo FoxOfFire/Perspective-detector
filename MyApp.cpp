@@ -298,6 +298,10 @@ void CMyApp::InitTextures()
 		m_frames[i] = {CMyApp::MakeBuffer(w,h), CMyApp::MakeBuffer(w, h)};
 	}
 
+	m_vec_texes = {
+		CMyApp::MakeBuffer(m_vec_tex_size, m_vec_tex_size),
+		CMyApp::MakeBuffer(m_vec_tex_size, m_vec_tex_size)
+	};
 	InitSkyboxTextures();
 }
 
@@ -490,13 +494,14 @@ void CMyApp::SetUniforms(){
 
 	glUniform1ui(ul("triangleCount"), (cubeGPU.indexBuffer.GetCount() / 3));
 
+	glUniform2iv(ul("texSize"),1,glm::value_ptr(m_CarSizes[m_active_car_img]));
+	glUniform1i(ul("vecSize"),m_vec_tex_size);
 	glUniform1i(ul("mode"),m_mode);
 	glUniform1i(ul("kernelSize"), static_cast<GLint>(m_kernel_size));
 	glUniform1f(ul("sigma"),m_sigma);
 	glUniform1f(ul("t_lower"),m_threshold_lower);
 	glUniform1f(ul("t_upper"),m_threshold_upper);
 	glUniform1i(ul("last_hyst"), m_last_hyst);
-	glUniform1f(ul("point"), m_points);
 	glUniform1ui(ul("seed"), m_seed);
 	glUniform1f(ul("lineTh"), m_line_th);
 	glUniform1f(ul("lineTh2"), m_line_thth);
@@ -577,47 +582,57 @@ void CMyApp::DrawMainScene()
 	m_mode = M_COPY;
 	CMyApp::DrawPass(m_CarIDs[m_active_car_img], buff[(n+1)%2].fbo);
 	n++;
+	bool draw_vec = false;
+	int base_seed = m_seed;
 
 	if (m_disp_mode >= M_AVG){
 		m_mode = M_AVG;
 		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 		n++;
+		draw_vec = false;
 	}
 
 	if (m_disp_mode >= M_GAUSS){
 		m_mode = M_GAUSS;
 		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 		n++;
+		draw_vec = false;
 	}
 	if (m_disp_mode ==M_SOBEL_GRAD){
 		m_mode = M_SOBEL_GRAD;
 		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 		n++;
+		draw_vec = false;
 	}
 	if (m_disp_mode ==M_SOBEL_DIR){
 		m_mode = M_SOBEL_DIR;
 		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 		n++;
+		draw_vec = false;
 	}
 	if (m_disp_mode ==M_SOBEL_NORM){
 		m_mode = M_SOBEL_NORM;
 		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 		n++;
+		draw_vec = false;
 	}
 	if (m_disp_mode >= M_SOBEL){
 		m_mode = M_SOBEL;
 		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 		n++;
+		draw_vec = false;
 	}
 	if (m_disp_mode >= M_NON_MAX_SUPRESS){
 		m_mode = M_NON_MAX_SUPRESS;
 		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 		n++;
+		draw_vec = false;
 	}
 	if (m_disp_mode >= M_THRESHOLD){
 		m_mode = M_THRESHOLD;
 		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 		n++;
+		draw_vec = false;
 	}
 	if (m_disp_mode >= M_HYSTERESIS){
 		m_mode = M_HYSTERESIS;
@@ -629,28 +644,55 @@ void CMyApp::DrawMainScene()
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
 		}
+		draw_vec = false;
 	}
 	if (m_disp_mode >= M_RANDOM_POINTS){
 		m_mode = M_RANDOM_POINTS;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+		CMyApp::DrawPass(buff[n%2].texture, m_vec_texes[(n+1)%2].fbo);
 		n++;
+		draw_vec = true;
+		m_seed++;
+	}
+	if (m_disp_mode == M_LINE_STR){
+		m_mode = M_LINE_STR;
+		CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
+		n++;
+		draw_vec = true;
+		m_seed++;
+	}
+	if (m_disp_mode == M_LINE_DIR){
+		m_mode = M_LINE_DIR;
+		CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
+		n++;
+		draw_vec = true;
+		m_seed++;
 	}
 	if (m_disp_mode >= M_VECTOR_GEN){
 		m_mode = M_VECTOR_GEN;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+		CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
 		n++;
+		draw_vec = true;
+		m_seed++;
 	}
+
 	if (m_disp_mode == M_LINE_GEN){
 		m_mode = M_LINE_GEN;
-		CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+		CMyApp::DrawPass(m_vec_texes[n%2].texture, buff[(n+1)%2].fbo);
 		n++;
+		draw_vec = false;
+		m_seed++;
 	}
 	
 	m_mode = M_COPY;
-	CMyApp::DrawPass(buff[n%2].texture, 0);
+	if (draw_vec){
+		CMyApp::DrawPass(m_vec_texes[n%2].texture, 0);
+	}
+	else{
+		CMyApp::DrawPass(buff[n%2].texture, 0);
+	}
 
 
-	//CMyApp::DrawPass(buff[n%2].texture,kkkkk0);
+	m_seed = base_seed;
 	
 }
 
@@ -719,7 +761,6 @@ void CMyApp::RenderGUI()
 
 				if(ImGui::SliderInt("Hyst iterations",&m_hysteresis_iter, 1, 1000)){}
 
-				if(ImGui::SliderFloat("point size",&m_points, 0, 1)){}
 				if(ImGui::SliderInt("Point seed",&m_seed, 1, 1000)){}
 				if(ImGui::SliderFloat("line threshold",&m_line_th, 0, 1)){}
 				if(ImGui::SliderFloat("line threshold 2",&m_line_thth, 0, 1)){}
