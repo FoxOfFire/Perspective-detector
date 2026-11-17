@@ -473,7 +473,7 @@ CMyApp::FrameBuffer CMyApp::MakeBuffer(int w, int h){
 
 	glGenTextures(1,&buffer.texture);
 	glBindTexture(GL_TEXTURE_2D,buffer.texture);
-	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA16,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,nullptr);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -638,9 +638,7 @@ void CMyApp::DrawMainScene()
 			m_mode = M_HYSTERESIS;
 			m_last_hyst = 1;
 			for(int i = 0; i <= m_hysteresis_iter; i++){
-				if (i == m_hysteresis_iter){
-					m_last_hyst =0;
-				}
+				m_last_hyst = m_hysteresis_iter-i;
 				CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 				n++;
 			}
@@ -656,18 +654,6 @@ void CMyApp::DrawMainScene()
 			m_draw_vec = false;
 			m_mode = M_POINTS_DISP;
 			CMyApp::DrawPass(m_vec_texes[n%2].texture, buff[(n+1)%2].fbo);
-			n++;
-			m_seed++;
-		}
-		if (m_disp_mode == M_LINE_STR){
-			m_mode = M_LINE_STR;
-			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
-			n++;
-			m_seed++;
-		}
-		if (m_disp_mode == M_LINE_DIR){
-			m_mode = M_LINE_DIR;
-			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
 			n++;
 			m_seed++;
 		}
@@ -782,7 +768,7 @@ void CMyApp::RenderGUI()
 				if(ImGui::SliderFloat("line threshold",&m_line_th, 0, 1)){
 					m_settings_changed = 2;
 				}
-				if(ImGui::SliderFloat("line threshold 2",&m_line_thth, 0, 1000)){
+				if(ImGui::SliderFloat("line threshold 2",&m_line_thth, 0, 100)){
 					m_settings_changed = 2;
 				}
 

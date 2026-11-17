@@ -170,9 +170,7 @@ protected:
 	static const int M_HYSTERESIS = M_THRESHOLD + 1;
 	static const int M_RANDOM_POINTS = M_HYSTERESIS + 1;
 	static const int M_POINTS_DISP = M_RANDOM_POINTS + 1;
-	static const int M_LINE_STR = M_POINTS_DISP + 1;
-	static const int M_LINE_DIR = M_LINE_STR + 1;
-	static const int M_VECTOR_GEN = M_LINE_DIR + 1;
+	static const int M_VECTOR_GEN = M_POINTS_DISP + 1;
 	static const int M_LINE_GEN = M_VECTOR_GEN + 1;
 
 	static const int M_MAXVAL = M_LINE_GEN ;
