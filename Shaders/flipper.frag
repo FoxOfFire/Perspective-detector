@@ -193,7 +193,8 @@ vec4 pointDisplay(){
 
 	for(int i = 0; i < vecSize; i++){
 		for(int j = 0; j < vecSize; j++){
-			if(length(uv-texture(srcImg,vec2(i,j)*invVecSize).xy) <  invImgSize){
+			vec2 pos = texture(srcImg,vec2(i,j)*invVecSize).xy;
+			if(length(uv-pos) < invImgSize){
 				return vec4(1);
 			}
 
@@ -201,15 +202,11 @@ vec4 pointDisplay(){
 	}
 	return vec4(0);
 }
-float sdf_line(vec2 point,vec2 line){
-	float x = cos(line.x);
-	float y = sin(line.y);
-	return point.x * x + point.y * y + line.y;
-}
 vec4 vecgen(){
 	r = int((uv.x*uv.x+uv.y)*float(texSize.x * texSize.y))+seed;
 	float invVecSize = 1.0 / float(vecSize);
 	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
+	float pi = 3.14159265359;
 
 	int hit = 0;
 	int miss = 0;
@@ -217,8 +214,8 @@ vec4 vecgen(){
 	if (pos.w < 1){
 		return vec4(0);
 	}
-	int x = int(rnd(uint(r)));
-	int y = int(rnd(uint(x)));
+	int x = int(rnd(r));
+	int y = int(rnd(x));
 	vec2 resUv = vec2(1);
 	bool found = false;
 	for(int i = 0; i < vecSize; i++){
@@ -236,31 +233,40 @@ vec4 vecgen(){
 	}
 
 	resUv = pos.xy - resUv;
-	resUv *= texSize;
-	float theta = atan(resUv.y,resUv.x);
-	vec2 line = vec2(theta,-length(resUv));
-	return vec4(line,1,1);
+	float theta = atan(resUv.y,resUv.x) + pi/2.0;
+	return vec4(resUv,theta,1);
 }
 
 vec4 linegen(){
-	vec2 texelSize = 1.0 /vec2(vecSize);
 
-	vec2 point = uv * texSize;
-	
+	float texelSize = 1.0 /vecSize;
+	vec2 intTex = 1.0 / texSize ;
+	int hit = 0;
+	int miss = 0;
 	for(uint i = 0; i < vecSize; i++){
 		for(uint j = 0; j < vecSize; j++){
 			vec2 pos = vec2(i,j)*texelSize;
 			vec4 line = texture(srcImg, pos);
-			if (line.z  < 1){
+			if (line.w  < 1){
 				continue;
 			}
-			if(sdf_line(point,line.xy) < lineTh2){
-				return vec4(1);
+			vec2 p = uv-line.xy;
+			float sdf = abs(p.x*cos(line.z)+p.y*sin(line.z));
+			if(sdf< min(intTex.x,intTex.y)){
+				hit++;
+			}
+			else{
+				miss++;
 			}
 
 		}
 	}
-	return vec4(0,0,0,1);
+	if (hit+miss <1){
+		return vec4(0,0,0,1);
+	}
+	float hitrate = float(hit)/float(hit+miss);
+
+	return vec4(sqrt(hitrate)*10,0,0,1);
 }
 
 
