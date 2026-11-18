@@ -664,14 +664,19 @@ void CMyApp::DrawMainScene()
 			m_seed++;
 		}
 
-		if (m_disp_mode == M_LINE_GEN){
+		if (m_disp_mode >= M_LINE_GEN){
 			m_mode = M_LINE_GEN;
+			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
+			n++;
+			m_seed++;
+		}
+		if (m_disp_mode == M_LINE_DISP){
 			m_draw_vec = false;
+			m_mode = M_LINE_DISP;
 			CMyApp::DrawPass(m_vec_texes[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
 			m_seed++;
 		}
-		
 		m_mode = M_COPY;
 		CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[2].fbo);
 		CMyApp::DrawPass(buff[n%2].texture, buff[2].fbo);
@@ -765,10 +770,10 @@ void CMyApp::RenderGUI()
 				if(ImGui::SliderInt("Point seed",&m_seed, 1, 1000)){
 					m_settings_changed = 2;
 				}
-				if(ImGui::SliderFloat("line threshold",&m_line_th, 0, 1)){
+				if(ImGui::SliderFloat("line threshold",&m_line_th, 0, .3)){
 					m_settings_changed = 2;
 				}
-				if(ImGui::SliderFloat("line threshold 2",&m_line_thth, 0, 100)){
+				if(ImGui::SliderFloat("line threshold 2",&m_line_thth, 0, 5)){
 					m_settings_changed = 2;
 				}
 

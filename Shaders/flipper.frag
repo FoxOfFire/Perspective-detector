@@ -232,28 +232,36 @@ vec4 vecgen(){
 		}
 	}
 
-	resUv = pos.xy - resUv;
-	float theta = atan(resUv.y,resUv.x) + pi/2.0;
-	return vec4(resUv,theta,1);
+	resUv = (pos.xy - resUv );
+	float theta = ((atan(resUv.y,resUv.x)+1)/(pi*2.0));
+	return vec4(pos.xy,theta,1);
 }
 
-vec4 linegen(){
-
+vec4 linegen(int mode){
+	float pi = 3.14159265359;
 	float texelSize = 1.0 /vecSize;
 	vec2 intTex = 1.0 / texSize ;
+	float threshold = lineTh2*min(intTex.x,intTex.y);
+	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
+
 	int hit = 0;
 	int miss = 0;
+	float hitTheta = 0.0;
 	for(uint i = 0; i < vecSize; i++){
 		for(uint j = 0; j < vecSize; j++){
 			vec2 pos = vec2(i,j)*texelSize;
 			vec4 line = texture(srcImg, pos);
-			if (line.w  < 1){
-				continue;
-			}
 			vec2 p = uv-line.xy;
-			float sdf = abs(p.x*cos(line.z)+p.y*sin(line.z));
-			if(sdf< min(intTex.x,intTex.y)){
+			float theta = (line.z*2 - .5)*pi;
+			float sdf = abs(p.x*cos(theta)+p.y*sin(theta));
+			if (mode == 1){
+				if(line.w > 0 && sdf< invImgSize ){
+					return vec4(1);
+				}
+			}
+			else if(line.w > 0 && sdf< threshold ){
 				hit++;
+				hitTheta += (line.z+1)/2;
 			}
 			else{
 				miss++;
@@ -261,15 +269,20 @@ vec4 linegen(){
 
 		}
 	}
+	if(mode == 1){
+		return vec4(0);
+	}
 	if (hit+miss <1){
-		return vec4(0,0,0,1);
+		return vec4(1,0,1,1);
 	}
 	float hitrate = float(hit)/float(hit+miss);
+	hitrate = sqrt(hitrate);
+	if (hitrate < lineTh){
+		return vec4(0);
+	}
 
-	return vec4(sqrt(hitrate)*10,0,0,1);
+	return texture(srcImg,uv);
 }
-
-
 
 void main(){
 	if(mode == 0){
@@ -313,7 +326,10 @@ void main(){
 		FragColor = vecgen();
 	}
 	else if (mode == 13){
-		FragColor = linegen();
+		FragColor = linegen(0);
+	}
+	else if (mode == 14){
+		FragColor = linegen(1);
 	}
 	else{
 		FragColor = vec4(1,0,1,1);

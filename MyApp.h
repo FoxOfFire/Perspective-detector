@@ -147,15 +147,15 @@ protected:
 
 	int m_kernel_size = 9;
 	GLfloat m_sigma = 1;
-	GLfloat m_threshold_lower = .05;
-	GLfloat m_threshold_upper = .25;
+	GLfloat m_threshold_lower = .25;
+	GLfloat m_threshold_upper = .5;
 	int m_hysteresis_iter = 200;
 	GLuint m_last_hyst = 0;
 	GLint m_seed = 0;
 	GLfloat m_line_th = .1;
 	GLfloat m_line_thth = 1;
 
-	int m_vec_tex_size = 	200;
+	int m_vec_tex_size = 	300;
 
 	//Modes:
 	static const int M_COPY = 0;
@@ -172,8 +172,9 @@ protected:
 	static const int M_POINTS_DISP = M_RANDOM_POINTS + 1;
 	static const int M_VECTOR_GEN = M_POINTS_DISP + 1;
 	static const int M_LINE_GEN = M_VECTOR_GEN + 1;
+	static const int M_LINE_DISP = M_LINE_GEN+ 1;
 
-	static const int M_MAXVAL = M_LINE_GEN ;
+	static const int M_MAXVAL = M_LINE_DISP ;
 
 	int m_mode = M_COPY;
 	int m_disp_mode = M_COPY;
