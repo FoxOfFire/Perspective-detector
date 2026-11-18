@@ -253,9 +253,9 @@ vec4 linegen(int mode){
 			vec4 line = texture(srcImg, pos);
 			vec2 p = uv-line.xy;
 			float theta = (line.z*2 - .5)*pi;
-			float sdf = abs(p.x*cos(theta)+p.y*sin(theta));
+			float sdf = abs(p.x*cos(theta)+p.y*sin(theta))-invImgSize ;
 			if (mode == 1){
-				if(line.w > 0 && sdf< invImgSize ){
+				if(line.w > 0 && sdf< 0 ){
 					return vec4(1);
 				}
 			}

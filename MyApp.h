@@ -155,7 +155,7 @@ protected:
 	GLfloat m_line_th = .1;
 	GLfloat m_line_thth = 1;
 
-	int m_vec_tex_size = 	300;
+	int m_vec_tex_size = 	100;
 
 	//Modes:
 	static const int M_COPY = 0;
