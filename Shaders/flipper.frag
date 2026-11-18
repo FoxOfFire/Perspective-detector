@@ -153,36 +153,41 @@ vec4 hysteresis(){
 uint r = 123412341;
 
 uint rnd(uint r)
-{
+{	
+	r += ( r << 10u );
+	r ^= ( r >>  6u );
+	r += ( r <<  3u );
+	r ^= ( r >> 11u );
+	r += ( r << 15u );
+	return r;
+	/*
 	r = (r * 9302 + 49297)%122280;
 	r = r ^ (r << 13);
 	r = r ^ (r >> 17);
 	r = r ^ (r << 5);
 	return r;
+	*/
 }
 vec4 pointSelect(){
-
-	r = int((uv.x*uv.x+uv.y)*float(texSize.x * texSize.y))+seed;
+	r = seed;
+	r = rnd(r) + int(uv.x*1000.0*texSize.x);
+	r = rnd(r) + int(uv.y*1000.0* texSize.y);
+	r = rnd(r);
 	vec2 size =  vec2(texSize);
 	vec2 texelSize = 1.0 / size;
 	int kernel_w = 2*int(kernelSize) ;
 	int kernel_p = 2*kernel_w + 1;
-	for(int k = 0; k < kernelSize; k++){
-		r = rnd(r);
+	for(int k = 0; k < kernelSize*kernelSize*vecSize*vecSize; k++){
+		r = rnd(r^(k+seed));
 		int x = int(r);
-		r = rnd(r);
+		r = rnd(r^(k+seed));
 		int y = int(r);
-		for(int i = 0; i < kernel_p; i++){
-			for(int j = 0; j < kernel_p; j++){
-				int ofx = (x + i)% (int(size.x)-kernel_p);
-				int ofy = (y + j)% (int(size.y)-kernel_p);
-				vec2 samplePos = clamp(uv + vec2(ofx,ofy)*texelSize,vec2(0),vec2(1));
-				vec4 pixel = texture(srcImg, samplePos);
-				if (pixel.x == 1){
-					return vec4(samplePos,0,1);
-				}
-
-			}
+		int ofx = (x % int(size.x));
+		int ofy = (y % int(size.y));
+		vec2 samplePos = vec2(ofx,ofy)*texelSize;
+		vec4 pixel = texture(srcImg, samplePos);
+		if (pixel.x == 1){
+			return vec4(samplePos,0,1);
 		}
 	}
 	return vec4(0);
@@ -214,8 +219,8 @@ vec4 vecgen(){
 	if (pos.w < 1){
 		return vec4(0);
 	}
-	int x = int(rnd(r));
-	int y = int(rnd(x));
+	int x = int(rnd(r))%vecSize;
+	int y = int(rnd(x))%vecSize;
 	vec2 resUv = vec2(1);
 	bool found = false;
 	for(int i = 0; i < vecSize; i++){
@@ -233,7 +238,7 @@ vec4 vecgen(){
 	}
 
 	resUv = (pos.xy - resUv );
-	float theta = ((atan(resUv.y,resUv.x)+1)/(pi*2.0));
+	float theta = ((atan(resUv.y,resUv.x)+pi)/(pi*2.0));
 	return vec4(pos.xy,theta,1);
 }
 
@@ -251,7 +256,12 @@ vec4 linegen(int mode){
 		for(uint j = 0; j < vecSize; j++){
 			vec2 pos = vec2(i,j)*texelSize;
 			vec4 line = texture(srcImg, pos);
-			vec2 p = uv-line.xy;
+			vec2 p = texture(srcImg,uv).xy-line.xy;
+			if (mode == 1){
+				p = uv-line.xy;
+			}
+
+			
 			float theta = (line.z*2 - .5)*pi;
 			float sdf = abs(p.x*cos(theta)+p.y*sin(theta))-invImgSize ;
 			if (mode == 1){
