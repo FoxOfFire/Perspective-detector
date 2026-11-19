@@ -652,7 +652,7 @@ void CMyApp::DrawMainScene()
 		}
 		if (m_disp_mode >= M_REMOVE_DUPLICATES){
 			m_mode = M_REMOVE_DUPLICATES;
-			CMyApp::DrawPass(buff[n%2].texture, m_vec_texes[(n+1)%2].fbo);
+			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
 			n++;
 			m_seed++;
 		}

@@ -192,7 +192,27 @@ vec4 pointSelect(){
 	}
 	return vec4(0);
 }
-vec
+vec4 undupe(){
+	float invVecSize = 1.0 / float(vecSize);
+	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
+
+	int hit = 0;
+	vec4 thisP = texture(srcImg,uv);
+	for(int i = 0; i < vecSize; i++){
+		for(int j = 0; j < vecSize; j++){
+			vec2 newuv = vec2(i,j)*invVecSize;
+			if(newuv.x < uv.x || newuv.y < uv.y){
+				continue;
+			}
+			vec2 pos = texture(srcImg,newuv).xy;
+			if(length(thisP.xy-pos) <= invImgSize){
+				return vec4(0);
+			}
+
+		}
+	}
+	return thisP;
+}
 vec4 pointDisplay(){
 	float invVecSize = 1.0 / float(vecSize);
 	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
@@ -264,24 +284,29 @@ vec4 linegen(int mode){
 	int hit = 0;
 	int miss = 0;
 	float hitTheta = 0.0;
+	vec4 currtex =texture(srcImg,uv);
 	for(uint i = 0; i < vecSize; i++){
 		for(uint j = 0; j < vecSize; j++){
 			vec2 pos = vec2(i,j)*texelSize;
 			vec4 line = texture(srcImg, pos);
-			vec2 p = texture(srcImg,uv).xy-line.xy;
+			if (line.w < 1){
+				miss++;
+				continue;
+			}
+			vec2 p = currtex.xy-line.xy;
 			if (mode == 1){
 				p = uv-line.xy;
 			}
 
 			
 			float theta = (line.z*2 - .5)*pi;
-			float sdf = abs(p.x*cos(theta)+p.y*sin(theta))-invImgSize ;
+			float sdf = abs(p.x*cos(theta)+p.y*sin(theta)) ;
 			if (mode == 1){
-				if(line.w > 0 && sdf< 0 ){
+				if(line.w > 0 && sdf< invImgSize ){
 					return vec4(1);
 				}
 			}
-			else if(line.w > 0 && sdf< threshold ){
+			else if( sdf< threshold ){
 				hit++;
 				hitTheta += theta;
 			}
@@ -342,15 +367,18 @@ void main(){
 		FragColor = pointSelect();
 	}
 	else if (mode == 11){
-		FragColor = pointDisplay();
+		FragColor = undupe();
 	}
 	else if (mode == 12){
-		FragColor = vecgen();
+		FragColor = pointDisplay();
 	}
 	else if (mode == 13){
-		FragColor = linegen(0);
+		FragColor = vecgen();
 	}
 	else if (mode == 14){
+		FragColor = linegen(0);
+	}
+	else if (mode == 15){
 		FragColor = linegen(1);
 	}
 	else{
