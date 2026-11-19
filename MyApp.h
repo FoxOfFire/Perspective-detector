@@ -155,7 +155,7 @@ protected:
 	GLfloat m_line_th = .1;
 	GLfloat m_line_thth = 1;
 
-	int m_vec_tex_size = 	200;
+	int m_vec_tex_size = 	100;
 
 	//Modes:
 	static const int M_COPY = 0;
@@ -169,7 +169,8 @@ protected:
 	static const int M_THRESHOLD = M_NON_MAX_SUPRESS + 1;
 	static const int M_HYSTERESIS = M_THRESHOLD + 1;
 	static const int M_RANDOM_POINTS = M_HYSTERESIS + 1;
-	static const int M_POINTS_DISP = M_RANDOM_POINTS + 1;
+	static const int M_REMOVE_DUPLICATES = M_RANDOM_POINTS + 1;
+	static const int M_POINTS_DISP = M_REMOVE_DUPLICATES + 1;
 	static const int M_VECTOR_GEN = M_POINTS_DISP + 1;
 	static const int M_LINE_GEN = M_VECTOR_GEN + 1;
 	static const int M_LINE_DISP = M_LINE_GEN+ 1;

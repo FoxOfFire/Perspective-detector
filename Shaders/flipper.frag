@@ -170,8 +170,8 @@ uint rnd(uint r)
 }
 vec4 pointSelect(){
 	r = seed;
-	r = rnd(r) + int(uv.x*1000.0*texSize.x);
-	r = rnd(r) + int(uv.y*1000.0* texSize.y);
+	r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
+	r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
 	r = rnd(r);
 	vec2 size =  vec2(texSize);
 	vec2 texelSize = 1.0 / size;
@@ -192,23 +192,33 @@ vec4 pointSelect(){
 	}
 	return vec4(0);
 }
+vec
 vec4 pointDisplay(){
 	float invVecSize = 1.0 / float(vecSize);
 	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
 
+	int hit = 0;
 	for(int i = 0; i < vecSize; i++){
 		for(int j = 0; j < vecSize; j++){
 			vec2 pos = texture(srcImg,vec2(i,j)*invVecSize).xy;
 			if(length(uv-pos) < invImgSize){
-				return vec4(1);
+				hit++;
 			}
 
 		}
 	}
-	return vec4(0);
+	if (hit > 7){
+		return vec4(1,0,1,1);
+	}
+	hit = hit;
+	return vec4(hit%2,(hit/2)%2,(hit/4)%2,1);
 }
 vec4 vecgen(){
-	r = int((uv.x*uv.x+uv.y)*float(texSize.x * texSize.y))+seed;
+
+	r = seed;
+	r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
+	r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
+	r = rnd(r);
 	float invVecSize = 1.0 / float(vecSize);
 	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
 	float pi = 3.14159265359;
@@ -219,14 +229,16 @@ vec4 vecgen(){
 	if (pos.w < 1){
 		return vec4(0);
 	}
-	int x = int(rnd(r))%vecSize;
+	int x = int(r)%vecSize;
 	int y = int(rnd(x))%vecSize;
 	vec2 resUv = vec2(1);
+	vec4 resCol = vec4(0);
 	bool found = false;
 	for(int i = 0; i < vecSize; i++){
 		for(int j = 0; j < vecSize; j++){
 			resUv = vec2((i+x)%vecSize,(j+y)%vecSize)*invVecSize;
-			found = (texture(srcImg,resUv).z > 0.0);
+			resCol = texture(srcImg,resUv);
+			found = resCol.z > 0.0;
 			if(found){
 				break;
 			}
@@ -237,7 +249,7 @@ vec4 vecgen(){
 		}
 	}
 
-	resUv = (pos.xy - resUv );
+	resUv = (resCol.xy - pos.xy  );
 	float theta = ((atan(resUv.y,resUv.x)+pi)/(pi*2.0));
 	return vec4(pos.xy,theta,1);
 }
@@ -271,7 +283,7 @@ vec4 linegen(int mode){
 			}
 			else if(line.w > 0 && sdf< threshold ){
 				hit++;
-				hitTheta += (line.z+1)/2;
+				hitTheta += theta;
 			}
 			else{
 				miss++;
