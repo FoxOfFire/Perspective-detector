@@ -4,19 +4,19 @@ layout(location = 0) out vec4 FragColor;
 
 uniform sampler2D srcImg;
 
-uniform int mode = 0;
-//blur
-uniform int kernelSize = 3;
 uniform ivec2 texSize = ivec2(100);
-uniform int vecSize = 100;
+uniform int mode = 0;
+uniform int kernelSize = 3;
 uniform float sigma = 1.0;
+uniform int sobelMode = 0;
 uniform float t_lower = .3;
 uniform float t_upper = .6;
 uniform int last_hyst = 10;
+uniform int lineKernel = 50;
 uniform uint seed = 0;
 uniform float lineTh = .1;
 uniform float lineTh2 = 1;
-uniform int reRand = 1;
+uniform int minHits = 30;
 
 
 in vec2 uv;
@@ -161,130 +161,36 @@ uint rnd(uint r)
 	r ^= ( r >> 11u );
 	r += ( r << 15u );
 	return r;
-	/*
-	r = (r * 9302 + 49297)%122280;
-	r = r ^ (r << 13);
-	r = r ^ (r >> 17);
-	r = r ^ (r << 5);
-	return r;
-	*/
-}
-vec4 pointSelect(){
-	r = seed;
-	r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
-	r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
-	r = rnd(r);
-	vec2 size =  vec2(texSize);
-	vec2 texelSize = 1.0 / size;
-	int kernel_w = 2*int(kernelSize) ;
-	int kernel_p = 2*kernel_w + 1;
-	for(int k = 0; k < kernelSize*kernelSize*vecSize*vecSize; k++){
-		r = rnd(r^(k+seed));
-		int x = int(r);
-		r = rnd(r^(k+seed));
-		int y = int(r);
-		int ofx = (x % int(size.x));
-		int ofy = (y % int(size.y));
-		vec2 samplePos = vec2(ofx,ofy)*texelSize;
-		vec4 pixel = texture(srcImg, samplePos);
-		if (pixel.x == 1){
-			return vec4(samplePos,0,1);
-		}
-	}
-	return vec4(0);
-}
-vec4 undupe(){
-	float invVecSize = 1.0 / float(vecSize);
-	vec2 invImgSize = 1.0 / vec2(texSize);
-	float root2 = sqrt(2);
 
-	int hit = 0;
-	vec4 thisP = texture(srcImg,uv);
-	for(int i = 0; i < vecSize; i++){
-		for(int j = 0; j < vecSize; j++){
-			vec2 newuv = vec2(i,j)*invVecSize;
-			if(newuv.x < uv.x && newuv.y < uv.y || length(newuv - uv) < invVecSize){
-				continue;
-			}
-			vec2 pos = abs(thisP.xy-texture(srcImg,newuv).xy) - invImgSize;
-			if( pos.x < 0 && pos.y < 0){
-				return vec4(0);
-			}
-
-		}
-	}
-	return thisP;
-}
-vec4 pointDisplay(){
-	float invVecSize = 1.0 / float(vecSize);
-	float invImgSize = 1.0 / float(min(texSize.x,texSize.y));
-
-	int hit = 0;
-	for(int i = 0; i < vecSize; i++){
-		for(int j = 0; j < vecSize; j++){
-			vec2 pos = texture(srcImg,vec2(i,j)*invVecSize).xy;
-			if(length(uv-pos) < invImgSize){
-				hit++;
-			}
-
-		}
-	}
-	if (hit > 7){
-		return vec4(1,1,1,1);
-	}
-	hit = hit;
-	return vec4(hit%2,(hit/2)%2,(hit/4)%2,1);
 }
 vec4 vecgen(){
 
-	r = seed;
-	r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
-	r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
-	float invVecSize = 1.0 / float(vecSize);
+	if (texture(srcImg,uv).z < 1){
+		return vec4(0);
+	}
 	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
 	float pi = 3.14159265359;
 
 	int hit = 0;
 	int miss = 0;
-	vec4 pos = texture(srcImg,uv);
-	int x = int(rnd(r));
+	vec2 resUv = vec2(1);
+	bool found = false;
+
+	r = r ^ seed * 7;
 	r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
 	r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
+	int x = int(rnd(r));
+	r = rnd(r);
 	int y = int(rnd(r));
-	vec2 resUv = vec2(1);
-	vec4 resCol = vec4(0);
-	bool found = false;
-	if (pos.w < 1){
-		if (reRand == 0){
-			return vec4(0);
-		}else{
-			for(int i = 0; i < vecSize; i++){
-				for(int j = 0; j < vecSize; j++){
-					resUv = vec2((i+x)%vecSize,(j+y)%vecSize)*invVecSize;
-					pos = texture(srcImg,resUv);
-					found = pos.z > 0.0;
-					if(found){
-						break;
-					}
-
-				}
-				if(found){
-					break;
-				}
-			}
-			r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
-			r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
-			x = int(rnd(r));
-			r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
-			r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
-			y = int(rnd(r));
-		}
-	}
-	for(int i = 0; i < vecSize; i++){
-		for(int j = 0; j < vecSize; j++){
-			resUv = vec2((i+x)%vecSize,(j+y)%vecSize)*invVecSize;
-			resCol = texture(srcImg,resUv);
-			found = resCol.z > 0.0 && length(resCol.xy-pos.xy)-length(invImgSize) > 0;
+	int minX = max(0        ,(x%texSize.x)-lineKernel);
+	int minY = max(0        ,(y%texSize.y)-lineKernel);
+	int maxX = min(texSize.x,(x%texSize.x)+lineKernel);
+	int maxY = min(texSize.x,(y%texSize.y)+lineKernel);
+	
+	for(int i = minX; i <= maxX; i++){
+		for(int j = minY; j <= maxY; j++){
+			resUv = vec2(i,j)*invImgSize;
+			found = texture(srcImg,resUv).z > 0.0 && length(resUv-uv) <= length(invImgSize);
 			if(found){
 				break;
 			}
@@ -295,10 +201,9 @@ vec4 vecgen(){
 		}
 	}
 
-	resUv = (resCol.xy - pos.xy  );
+	resUv = resUv - uv;
 
-	vec2 norUv = normalize(resUv);
-	float theta ;
+	float theta;
 	if ( abs(resUv.x) < 0.0001){
 		theta = 0;
 	}
@@ -309,42 +214,49 @@ vec4 vecgen(){
 		}
 	}
 
-	resUv = (resUv +1)/2;
-	return vec4(pos.xy,theta,1);
+	return vec4(theta,0,0,1);
 }
 
 vec4 linegen(int mode){
 	float pi = 3.14159265359;
-	float texelSize = 1.0 /vecSize;
 	vec2 intTex = 1.0 / texSize ;
 	float threshold = lineTh2*length(intTex);
 	float invImgSize = 1.0 / float(min(texSize.x,texSize.y));
 
-	int hit = 0;
-	int miss = 0;
 	vec4 currtex =texture(srcImg,uv);
-	for(uint i = 0; i < vecSize; i++){
-		for(uint j = 0; j < vecSize; j++){
-			vec2 pos = vec2(i,j)*texelSize;
+	if (currtex.w < 1 && mode != 1){
+		return vec4(0);
+	}
+	float theta = currtex.x*pi;
+	int miss = 0;
+	int hit = 0;
+
+	ivec2 iuv = ivec2(uv.x*texSize.x,uv.y*texSize.y);
+	int minX = max(0        ,iuv.x-lineKernel);
+	int minY = max(0        ,iuv.y-lineKernel);
+	int maxX = min(texSize.x,iuv.x+lineKernel);
+	int maxY = min(texSize.x,iuv.y+lineKernel);
+	
+	for(int i = minX; i <= maxX; i++){
+		for(int j = minY; j <= maxY; j++){
+			vec2 pos = vec2(i,j)*intTex;
 			vec4 line = texture(srcImg, pos);
-			if (line.w < 1){
-				miss++;
+			if ( line.w < 1 || length(pos-uv)<invImgSize){
 				continue;
 			}
-			vec2 p = (currtex.xy*2-1)-(line.xy *2 +1);
-			if (mode == 1){
-				p = uv-line.xy;
-			}
+			vec2 p = uv-pos.xy;
 
 			
-			float theta = (line.z*2 - 1)*pi;
+			if (mode == 1){
+				theta = line.x *pi;
+			}
 			float sdf = abs(p.x*cos(theta)+p.y*sin(theta)) ;
 			if (mode == 1){
-				if(line.w > 0 && sdf< invImgSize ){
+				if(sdf < length(intTex) ){
 					return vec4(1);
 				}
 			}
-			else if( sdf< threshold ){
+			if( sdf< threshold ){
 				hit++;
 			}
 			else{
@@ -353,19 +265,15 @@ vec4 linegen(int mode){
 
 		}
 	}
-	if(mode == 1){
+	if (hit+miss <1 || mode == 1){
 		return vec4(0);
-	}
-	if (hit+miss <1){
-		return vec4(1,0,1,1);
 	}
 	float hitrate = float(hit)/float(hit+miss);
 	hitrate = sqrt(hitrate);
-	if (hitrate < lineTh){
+	if (hitrate < lineTh || hit < minHits){
 		return vec4(0);
 	}
-
-	return texture(srcImg,uv);
+	return vec4(currtex.x,hitrate,0,1);
 }
 
 void main(){
@@ -380,42 +288,24 @@ void main(){
 		FragColor = gaussian();
 	}
 	else if (mode == 3){
-		FragColor =  sobel(0);
+		FragColor =  sobel(sobelMode);
 	}
 	else if (mode == 4){
-		FragColor =  sobel(1);
-	}
-	else if (mode == 5){
-		FragColor =  sobel(2);
-	}
-	else if (mode == 6){
-		FragColor =  sobel(3);
-	}
-	else if (mode == 7){
 		FragColor =  non_max_supress();
 	}
-	else if (mode == 8){
+	else if (mode == 5){
 		FragColor =  threshold();
 	}
-	else if (mode == 9){
+	else if (mode == 6){
 		FragColor =  hysteresis();
 	}
-	else if (mode == 10){
-		FragColor = pointSelect();
-	}
-	else if (mode == 11){
-		FragColor = undupe();
-	}
-	else if (mode == 12){
-		FragColor = pointDisplay();
-	}
-	else if (mode == 13){
+	else if (mode == 7){
 		FragColor = vecgen();
 	}
-	else if (mode == 14){
+	else if (mode == 8){
 		FragColor = linegen(0);
 	}
-	else if (mode == 15){
+	else if (mode == 9){
 		FragColor = linegen(1);
 	}
 	else{

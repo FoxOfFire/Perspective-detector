@@ -143,50 +143,47 @@ protected:
 	GLuint m_SkyboxTextureID = 0;
 
 	int m_settings_changed = 2;
-	bool m_draw_vec = false;
 
+	int m_mode = M_COPY;
 	int m_kernel_size = 9;
-	GLfloat m_sigma = 1;
-	GLfloat m_threshold_lower = .125;
-	GLfloat m_threshold_upper = .25;
+	GLfloat m_sigma = 1.5;
+	GLint m_sobel_mode = 0;
+	GLfloat m_threshold_lower = .04;
+	GLfloat m_threshold_upper = .09;
 	int m_hysteresis_iter = 200;
 	GLuint m_last_hyst = 0;
 	GLint m_seed = 0;
-	GLfloat m_line_th = .1;
-	GLfloat m_line_thth = 6;
-	GLint m_rerandomize = 1;
+	GLint m_line_kernel_size = 500;
+	GLfloat m_line_th = .2;
+	GLfloat m_line_thth = .95;
+	GLint m_min_hits = 65;
 
-	int m_vec_tex_size = 	200;
+	static const int M_SOBEL_MODE_MAX = 3;
+
 
 	//Modes:
 	static const int M_COPY = 0;
 	static const int M_AVG = 1;
 	static const int M_GAUSS = 2;
-	static const int M_SOBEL_GRAD = 3;
-	static const int M_SOBEL_DIR = 4;
-	static const int M_SOBEL_NORM = 5;
-	static const int M_SOBEL = 6;
-	static const int M_NON_MAX_SUPRESS = 7;
-	static const int M_THRESHOLD = 8;
-	static const int M_HYSTERESIS = 9;
-	static const int M_RANDOM_POINTS = 10;
-	static const int M_REMOVE_DUPLICATES = 11;
-	static const int M_POINTS_DISP = 12;
-	static const int M_VECTOR_GEN = 13;
-	static const int M_LINE_GEN = 14;
-	static const int M_LINE_DISP = 15;
+	static const int M_SOBEL = 3;
+	static const int M_NON_MAX_SUPRESS = 4;
+	static const int M_THRESHOLD = 5;
+	static const int M_HYSTERESIS = 6;
+	static const int M_VECTOR_GEN = 7;
+	static const int M_LINE_GEN = 8;
+	static const int M_LINE_DISP = 9;
 
 
 	static const int M_D_BASE = 0;
-	static const int M_D_EDGE = 1;
-	static const int M_D_POINT = 2;
-	static const int M_D_VEC = 3;
-	static const int M_D_LINE = 4;
+	static const int M_D_SOBEL = 1;
+	static const int M_D_NONMAX = 2;
+	static const int M_D_EDGE = 3;
+	static const int M_D_VEC = 4;
+	static const int M_D_LINE = 5;
 	
 	static const int M_MAXVAL = M_D_LINE ;
 
 
-	int m_mode = M_COPY;
 	int m_disp_mode = M_COPY;
 
 
@@ -195,8 +192,7 @@ protected:
 		GLuint texture = 0;
 		GLuint fbo = 0;
 	};
-	std::array<std::array<FrameBuffer,3>,m_car_img_cnt> m_frames;
-	std::array<FrameBuffer,3> m_vec_texes;
+	std::array<std::array<FrameBuffer,5>,m_car_img_cnt> m_frames;
 	GLuint m_frameVao;
 
 	FrameBuffer MakeBuffer(int w, int h);
