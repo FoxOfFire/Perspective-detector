@@ -147,35 +147,44 @@ protected:
 
 	int m_kernel_size = 9;
 	GLfloat m_sigma = 1;
-	GLfloat m_threshold_lower = .25;
-	GLfloat m_threshold_upper = .5;
+	GLfloat m_threshold_lower = .125;
+	GLfloat m_threshold_upper = .25;
 	int m_hysteresis_iter = 200;
 	GLuint m_last_hyst = 0;
 	GLint m_seed = 0;
 	GLfloat m_line_th = .1;
-	GLfloat m_line_thth = 1;
+	GLfloat m_line_thth = 6;
+	GLint m_rerandomize = 1;
 
 	int m_vec_tex_size = 	200;
 
 	//Modes:
 	static const int M_COPY = 0;
-	static const int M_AVG = M_COPY + 1;
-	static const int M_GAUSS = M_AVG + 1;
-	static const int M_SOBEL_GRAD = M_GAUSS + 1;
-	static const int M_SOBEL_DIR = M_SOBEL_GRAD + 1;
-	static const int M_SOBEL_NORM = M_SOBEL_DIR + 1;
-	static const int M_SOBEL = M_SOBEL_NORM + 1;
-	static const int M_NON_MAX_SUPRESS = M_SOBEL + 1;
-	static const int M_THRESHOLD = M_NON_MAX_SUPRESS + 1;
-	static const int M_HYSTERESIS = M_THRESHOLD + 1;
-	static const int M_RANDOM_POINTS = M_HYSTERESIS + 1;
-	static const int M_REMOVE_DUPLICATES = M_RANDOM_POINTS + 1;
-	static const int M_POINTS_DISP = M_REMOVE_DUPLICATES + 1;
-	static const int M_VECTOR_GEN = M_POINTS_DISP + 1;
-	static const int M_LINE_GEN = M_VECTOR_GEN + 1;
-	static const int M_LINE_DISP = M_LINE_GEN+ 1;
+	static const int M_AVG = 1;
+	static const int M_GAUSS = 2;
+	static const int M_SOBEL_GRAD = 3;
+	static const int M_SOBEL_DIR = 4;
+	static const int M_SOBEL_NORM = 5;
+	static const int M_SOBEL = 6;
+	static const int M_NON_MAX_SUPRESS = 7;
+	static const int M_THRESHOLD = 8;
+	static const int M_HYSTERESIS = 9;
+	static const int M_RANDOM_POINTS = 10;
+	static const int M_REMOVE_DUPLICATES = 11;
+	static const int M_POINTS_DISP = 12;
+	static const int M_VECTOR_GEN = 13;
+	static const int M_LINE_GEN = 14;
+	static const int M_LINE_DISP = 15;
 
-	static const int M_MAXVAL = M_LINE_DISP ;
+
+	static const int M_D_BASE = 0;
+	static const int M_D_EDGE = 1;
+	static const int M_D_POINT = 2;
+	static const int M_D_VEC = 3;
+	static const int M_D_LINE = 4;
+	
+	static const int M_MAXVAL = M_D_LINE ;
+
 
 	int m_mode = M_COPY;
 	int m_disp_mode = M_COPY;

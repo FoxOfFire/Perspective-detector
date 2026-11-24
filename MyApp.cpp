@@ -506,6 +506,7 @@ void CMyApp::SetUniforms(){
 	glUniform1ui(ul("seed"), m_seed);
 	glUniform1f(ul("lineTh"), m_line_th);
 	glUniform1f(ul("lineTh2"), m_line_thth);
+	glUniform1i(ul("reRand"), m_rerandomize);
 	
 	glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE, glm::value_ptr(m_usedCamera.GetViewProj())); 	
 	glUniformMatrix4fv(ul("world"), 1, GL_FALSE, glm::value_ptr(glm::translate(m_usedCamera.GetEye())));
@@ -593,48 +594,33 @@ void CMyApp::DrawMainScene()
 		CMyApp::DrawPass(m_CarIDs[m_active_car_img], buff[(n+1)%2].fbo);
 		n++;
 
-		if (m_disp_mode >= M_AVG){
+		if (m_disp_mode >= M_D_EDGE){
 			m_mode = M_AVG;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
-		}
-
-		if (m_disp_mode >= M_GAUSS){
 			m_mode = M_GAUSS;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
-		}
-		if (m_disp_mode ==M_SOBEL_GRAD){
+			/*
 			m_mode = M_SOBEL_GRAD;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
-		}
-		if (m_disp_mode ==M_SOBEL_DIR){
 			m_mode = M_SOBEL_DIR;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
-		}
-		if (m_disp_mode ==M_SOBEL_NORM){
 			m_mode = M_SOBEL_NORM;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
-		}
-		if (m_disp_mode >= M_SOBEL){
+			*/
 			m_mode = M_SOBEL;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
-		}
-		if (m_disp_mode >= M_NON_MAX_SUPRESS){
 			m_mode = M_NON_MAX_SUPRESS;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
-		}
-		if (m_disp_mode >= M_THRESHOLD){
 			m_mode = M_THRESHOLD;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
-		}
-		if (m_disp_mode >= M_HYSTERESIS){
 			m_mode = M_HYSTERESIS;
 			m_last_hyst = 1;
 			for(int i = 0; i <= m_hysteresis_iter; i++){
@@ -643,40 +629,35 @@ void CMyApp::DrawMainScene()
 				n++;
 			}
 		}
-		if (m_disp_mode >= M_RANDOM_POINTS){
+		if (m_disp_mode >= M_D_POINT){
 			m_draw_vec = true;
 			m_mode = M_RANDOM_POINTS;
 			CMyApp::DrawPass(buff[n%2].texture, m_vec_texes[(n+1)%2].fbo);
 			n++;
 			m_seed++;
-		}
-		if (m_disp_mode >= M_REMOVE_DUPLICATES){
 			m_mode = M_REMOVE_DUPLICATES;
 			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
 			n++;
 			m_seed++;
 		}
-		if (m_disp_mode == M_POINTS_DISP){
+		if (m_disp_mode == M_D_POINT){
 			m_draw_vec = false;
 			m_mode = M_POINTS_DISP;
 			CMyApp::DrawPass(m_vec_texes[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
 			m_seed++;
 		}
-		if (m_disp_mode >= M_VECTOR_GEN){
+		if (m_disp_mode >= M_D_VEC){
 			m_mode = M_VECTOR_GEN;
 			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
 			n++;
 			m_seed++;
-		}
-
-		if (m_disp_mode >= M_LINE_GEN){
 			m_mode = M_LINE_GEN;
 			CMyApp::DrawPass(m_vec_texes[n%2].texture, m_vec_texes[(n+1)%2].fbo);
 			n++;
 			m_seed++;
 		}
-		if (m_disp_mode == M_LINE_DISP){
+		if (m_disp_mode == M_D_LINE){
 			m_draw_vec = false;
 			m_mode = M_LINE_DISP;
 			CMyApp::DrawPass(m_vec_texes[n%2].texture, buff[(n+1)%2].fbo);
@@ -776,10 +757,13 @@ void CMyApp::RenderGUI()
 				if(ImGui::SliderInt("Point seed",&m_seed, 1, 1000)){
 					m_settings_changed = 2;
 				}
+				if(ImGui::Checkbox("Re-randomize",(bool*)&m_rerandomize)){
+					m_settings_changed = 2;
+				}
 				if(ImGui::SliderFloat("line threshold",&m_line_th, 0, .3)){
 					m_settings_changed = 2;
 				}
-				if(ImGui::SliderFloat("line threshold 2",&m_line_thth, 0, 5)){
+				if(ImGui::SliderFloat("line threshold 2",&m_line_thth, 0, 10)){
 					m_settings_changed = 2;
 				}
 

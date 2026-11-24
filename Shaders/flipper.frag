@@ -16,6 +16,7 @@ uniform int last_hyst = 10;
 uniform uint seed = 0;
 uniform float lineTh = .1;
 uniform float lineTh2 = 1;
+uniform int reRand = 1;
 
 
 in vec2 uv;
@@ -194,18 +195,19 @@ vec4 pointSelect(){
 }
 vec4 undupe(){
 	float invVecSize = 1.0 / float(vecSize);
-	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
+	vec2 invImgSize = 1.0 / vec2(texSize);
+	float root2 = sqrt(2);
 
 	int hit = 0;
 	vec4 thisP = texture(srcImg,uv);
 	for(int i = 0; i < vecSize; i++){
 		for(int j = 0; j < vecSize; j++){
 			vec2 newuv = vec2(i,j)*invVecSize;
-			if(newuv.x < uv.x || newuv.y < uv.y){
+			if(newuv.x < uv.x && newuv.y < uv.y || length(newuv - uv) < invVecSize){
 				continue;
 			}
-			vec2 pos = texture(srcImg,newuv).xy;
-			if(length(thisP.xy-pos) <= invImgSize){
+			vec2 pos = abs(thisP.xy-texture(srcImg,newuv).xy) - invImgSize;
+			if( pos.x < 0 && pos.y < 0){
 				return vec4(0);
 			}
 
@@ -215,7 +217,7 @@ vec4 undupe(){
 }
 vec4 pointDisplay(){
 	float invVecSize = 1.0 / float(vecSize);
-	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
+	float invImgSize = 1.0 / float(min(texSize.x,texSize.y));
 
 	int hit = 0;
 	for(int i = 0; i < vecSize; i++){
@@ -228,7 +230,7 @@ vec4 pointDisplay(){
 		}
 	}
 	if (hit > 7){
-		return vec4(1,0,1,1);
+		return vec4(1,1,1,1);
 	}
 	hit = hit;
 	return vec4(hit%2,(hit/2)%2,(hit/4)%2,1);
@@ -238,7 +240,6 @@ vec4 vecgen(){
 	r = seed;
 	r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
 	r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
-	r = rnd(r);
 	float invVecSize = 1.0 / float(vecSize);
 	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
 	float pi = 3.14159265359;
@@ -246,19 +247,44 @@ vec4 vecgen(){
 	int hit = 0;
 	int miss = 0;
 	vec4 pos = texture(srcImg,uv);
-	if (pos.w < 1){
-		return vec4(0);
-	}
-	int x = int(r)%vecSize;
-	int y = int(rnd(x))%vecSize;
+	int x = int(rnd(r));
+	r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
+	r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
+	int y = int(rnd(r));
 	vec2 resUv = vec2(1);
 	vec4 resCol = vec4(0);
 	bool found = false;
+	if (pos.w < 1){
+		if (reRand == 0){
+			return vec4(0);
+		}else{
+			for(int i = 0; i < vecSize; i++){
+				for(int j = 0; j < vecSize; j++){
+					resUv = vec2((i+x)%vecSize,(j+y)%vecSize)*invVecSize;
+					pos = texture(srcImg,resUv);
+					found = pos.z > 0.0;
+					if(found){
+						break;
+					}
+
+				}
+				if(found){
+					break;
+				}
+			}
+			r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
+			r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
+			x = int(rnd(r));
+			r = rnd(r) ^ int(uv.x*100000.0*texSize.x);
+			r = rnd(r) ^ int(uv.y*100000.0* texSize.y);
+			y = int(rnd(r));
+		}
+	}
 	for(int i = 0; i < vecSize; i++){
 		for(int j = 0; j < vecSize; j++){
 			resUv = vec2((i+x)%vecSize,(j+y)%vecSize)*invVecSize;
 			resCol = texture(srcImg,resUv);
-			found = resCol.z > 0.0;
+			found = resCol.z > 0.0 && length(resCol.xy-pos.xy)-length(invImgSize) > 0;
 			if(found){
 				break;
 			}
@@ -270,7 +296,20 @@ vec4 vecgen(){
 	}
 
 	resUv = (resCol.xy - pos.xy  );
-	float theta = ((atan(resUv.y,resUv.x)+pi)/(pi*2.0));
+
+	vec2 norUv = normalize(resUv);
+	float theta ;
+	if ( abs(resUv.x) < 0.0001){
+		theta = 0;
+	}
+	else{
+		theta = ((atan(resUv.y,resUv.x))/pi);
+		if (theta < 0){
+			theta += 1;
+		}
+	}
+
+	resUv = (resUv +1)/2;
 	return vec4(pos.xy,theta,1);
 }
 
@@ -278,12 +317,11 @@ vec4 linegen(int mode){
 	float pi = 3.14159265359;
 	float texelSize = 1.0 /vecSize;
 	vec2 intTex = 1.0 / texSize ;
-	float threshold = lineTh2*min(intTex.x,intTex.y);
-	float invImgSize = 1.0 / float(max(texSize.x,texSize.y));
+	float threshold = lineTh2*length(intTex);
+	float invImgSize = 1.0 / float(min(texSize.x,texSize.y));
 
 	int hit = 0;
 	int miss = 0;
-	float hitTheta = 0.0;
 	vec4 currtex =texture(srcImg,uv);
 	for(uint i = 0; i < vecSize; i++){
 		for(uint j = 0; j < vecSize; j++){
@@ -293,13 +331,13 @@ vec4 linegen(int mode){
 				miss++;
 				continue;
 			}
-			vec2 p = currtex.xy-line.xy;
+			vec2 p = (currtex.xy*2-1)-(line.xy *2 +1);
 			if (mode == 1){
 				p = uv-line.xy;
 			}
 
 			
-			float theta = (line.z*2 - .5)*pi;
+			float theta = (line.z*2 - 1)*pi;
 			float sdf = abs(p.x*cos(theta)+p.y*sin(theta)) ;
 			if (mode == 1){
 				if(line.w > 0 && sdf< invImgSize ){
@@ -308,7 +346,6 @@ vec4 linegen(int mode){
 			}
 			else if( sdf< threshold ){
 				hit++;
-				hitTheta += theta;
 			}
 			else{
 				miss++;
