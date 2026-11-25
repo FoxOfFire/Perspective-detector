@@ -153,7 +153,7 @@ protected:
 	int m_hysteresis_iter = 200;
 	GLuint m_last_hyst = 0;
 	GLint m_seed = 0;
-	GLint m_line_kernel_size = 500;
+	GLint m_line_kernel_size = 200;
 	GLfloat m_line_th = .2;
 	GLfloat m_line_thth = .95;
 	GLint m_min_hits = 65;

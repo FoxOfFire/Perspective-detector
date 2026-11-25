@@ -298,8 +298,8 @@ void CMyApp::InitTextures()
 		m_frames[i] = {
 			CMyApp::MakeBuffer(w, h),
 			CMyApp::MakeBuffer(w, h),
-			CMyApp::MakeBuffer(w/2, h/2),
-			CMyApp::MakeBuffer(w/2, h/2),
+			CMyApp::MakeBuffer(w, h),
+			CMyApp::MakeBuffer(w, h),
 			CMyApp::MakeBuffer(w, h)};
 	}
 
@@ -473,7 +473,7 @@ CMyApp::FrameBuffer CMyApp::MakeBuffer(int w, int h){
 
 	glGenTextures(1,&buffer.texture);
 	glBindTexture(GL_TEXTURE_2D,buffer.texture);
-	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA32F,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA16,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,nullptr);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
