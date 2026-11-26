@@ -298,9 +298,9 @@ void CMyApp::InitTextures()
 		m_frames[i] = {
 			CMyApp::MakeBuffer(w, h),
 			CMyApp::MakeBuffer(w, h),
-			CMyApp::MakeBuffer(w, h),
-			CMyApp::MakeBuffer(w, h),
-			CMyApp::MakeBuffer(w, h)};
+			CMyApp::MakeBuffer(w / m_compression, h / m_compression),
+			CMyApp::MakeBuffer(w / m_compression, h / m_compression),
+			CMyApp::MakeBuffer(w , h )};
 	}
 
 	InitSkyboxTextures();
@@ -628,23 +628,29 @@ void CMyApp::DrawMainScene()
 			m_mode = M_VECTOR_GEN;
 			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
 			n++;
+			if(m_use_compression){
+				off += 2;
+				m_mode = M_COMPRESS;
+				CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2+2].fbo);
+				n++;
+			}
 			m_mode = M_LINE_GEN;
-			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+			CMyApp::DrawPass(buff[n%2+off].texture, buff[(n+1)%2+off].fbo);
 			n++;
 		}
 		if (m_disp_mode == M_D_LINE){
 			m_mode = M_LINE_DISP;
-			CMyApp::DrawPass(buff[n%2].texture, buff[(n+1)%2].fbo);
+			CMyApp::DrawPass(buff[n%2+off].texture, buff[(n+1)%2+off].fbo);
 			n++;
 		}
 		m_mode = M_COPY;
-		CMyApp::DrawPass(buff[n%2].texture, buff[off+2].fbo);
+		CMyApp::DrawPass(buff[n%2+off].texture, buff[4].fbo);
 	}
 
 
 
 
-	CMyApp::DrawPass(buff[off+2].texture, 0);
+	CMyApp::DrawPass(buff[4].texture, 0);
 
 
 	
@@ -737,6 +743,10 @@ void CMyApp::RenderGUI()
 				if(ImGui::SliderInt("Min Hits",&m_min_hits, 0, 200)){
 					m_settings_changed = 2;
 				}
+				if(ImGui::Checkbox("Use compression", &m_use_compression)){
+					m_settings_changed = 2;
+				}
+
 
 				ImGui::EndMenu();
 			}

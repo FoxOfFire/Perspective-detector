@@ -17,6 +17,7 @@ uniform uint seed = 0;
 uniform float lineTh = .1;
 uniform float lineTh2 = 1;
 uniform int minHits = 30;
+uniform int compression = 2;
 
 
 in vec2 uv;
@@ -236,6 +237,8 @@ vec4 linegen(int mode){
 	int minY = max(0        ,iuv.y-lineKernel);
 	int maxX = min(texSize.x,iuv.x+lineKernel);
 	int maxY = min(texSize.x,iuv.y+lineKernel);
+
+	float drawTh = invImgSize /3.0*2.0;
 	
 	for(int i = minX; i <= maxX; i++){
 		for(int j = minY; j <= maxY; j++){
@@ -252,7 +255,7 @@ vec4 linegen(int mode){
 			}
 			float sdf = abs(p.x*cos(theta)+p.y*sin(theta)) ;
 			if (mode == 1){
-				if(sdf < length(intTex) ){
+				if(sdf < drawTh){
 					return vec4(1);
 				}
 			}
@@ -273,9 +276,28 @@ vec4 linegen(int mode){
 	if (hitrate < lineTh || hit < minHits){
 		return vec4(0);
 	}
-	return vec4(currtex.x,hitrate,0,1);
+	return vec4(currtex.x,uv,1);
 }
 
+vec4 compress(){
+	float off = 1.0 / float(compression);
+
+	vec4 col = vec4(0);
+	for(int i = 0; i < compression; i++){
+		for(int j = 0; j < compression; j++){
+			vec2 nUv = (uv + vec2(i,j))*off;
+			col = texture(srcImg,nUv);
+			if (col.w < 1){
+				continue;
+			}
+			else{
+				return col;
+			}
+		}
+	}
+
+	return vec4(0);
+}
 void main(){
 	if(mode == 0){
 		FragColor = texture(srcImg, uv);
@@ -307,6 +329,9 @@ void main(){
 	}
 	else if (mode == 9){
 		FragColor = linegen(1);
+	}
+	else if (mode == 10){
+		FragColor = compress();
 	}
 	else{
 		FragColor = vec4(1,0,1,1);

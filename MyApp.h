@@ -157,6 +157,8 @@ protected:
 	GLfloat m_line_th = .2;
 	GLfloat m_line_thth = .95;
 	GLint m_min_hits = 65;
+	GLint m_compression = 2;
+	bool m_use_compression = false;
 
 	static const int M_SOBEL_MODE_MAX = 3;
 
@@ -172,6 +174,7 @@ protected:
 	static const int M_VECTOR_GEN = 7;
 	static const int M_LINE_GEN = 8;
 	static const int M_LINE_DISP = 9;
+	static const int M_COMPRESS = 10;
 
 
 	static const int M_D_BASE = 0;
